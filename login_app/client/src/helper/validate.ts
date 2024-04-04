@@ -49,6 +49,16 @@ export async function registorValidation(values:any) {
     return errors;
 }
 
+
+
+/**validate profile page**/
+
+export async function ProfileValidation(values:any) {
+    const errors=emailVerify({},values)
+    return errors;
+    
+}
+
 /**-----------------------------------------------------------------**/
 
 /** validate username **/
