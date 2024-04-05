@@ -2,6 +2,7 @@ import express,{Express} from "express"
 import cors from "cors"
 import morgan from 'morgan';
 import connect from "./database/conn";
+import router   from "./router/router";
 
 
 const app:Express=express();
@@ -15,6 +16,8 @@ app.disable('x-powered-by'); // less hackers know about our stack
 app.get('/',(req,res)=>{
     res.status(201).json("Home Get Request")
 })
+
+app.use('/api',router)
 
 
 
