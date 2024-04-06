@@ -2,6 +2,7 @@ import UserModel, { User } from "../model/User.model";
 import bcrypt from "bcrypt";
 import jwt, { Jwt } from "jsonwebtoken";
 import { NextFunction, Response, Request } from "express";
+import otpGenerator from "otp-generator"
 
 import RequestUser from "../model/requestUser";
 import ENV from "../config";
@@ -169,8 +170,8 @@ export async function getUser(req: Request, res: Response) {
 export async function updateUser(req: RequestUser, res: Response) {
 
     try {
-        
-        const {userId}=req.user as{userId:string}
+
+        const { userId } = req.user as { userId: string }
         if (userId) {
             const body: User = req.body
             UserModel.updateOne({ _id: userId }, body).then(results => {
@@ -190,19 +191,64 @@ export async function updateUser(req: RequestUser, res: Response) {
 
 // get
 export async function generateOTP(req: Request, res: Response) {
-    res.json("registor route");
+    req.app.locals.OTP = await otpGenerator.generate(6, { lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false })
+    res.status(201).send({ code: req.app.locals.OTP })
+
 }
 
 //get
 export async function verifyOTP(req: Request, res: Response) {
-    res.json("registor route");
+    const { code } = req.query;
+    if (typeof code === "string" && parseInt(req.app.locals.OTP) === parseInt(code)) {
+
+        req.app.locals.OTP = null;
+        req.app.locals.ressetSession = true;
+        return res.status(201).send({ msg: "Verify Successfully!" })
+    }
+    return res.status(400).send({ error: "Invalid OTP" })
 }
 // get
 export async function createResetSession(req: Request, res: Response) {
-    res.json("registor route");
+    if(req.app.locals.ressetSession){
+        req.app.locals.ressetSession=false;
+        return res.status(201).send({msg:"access granted!"})
+
+    }
+    return res.status(400).send({error:"Session expired!"})
 }
 
 //update
+
 export async function resetPassword(req: Request, res: Response) {
-    res.json("registor route");
+    try {
+        const { username, password }: User = req.body;
+
+        UserModel.findOne({ username })
+            .then(user => {
+                if (!user) {
+                    return res.status(404).send({ error: "Username not found!" });
+                }
+
+                bcrypt.hash(password, 10)
+                    .then(hashedPassword => {
+                        UserModel.updateOne({ username: user.username }, { password: hashedPassword })
+                            .then(() => {
+                                return res.status(201).send({ msg: "Record Updated....!" });
+                            })
+                            .catch(err => {
+                                throw err;
+                            });
+                    })
+                    .catch(err => {
+                        return res.status(500).send({
+                            error: "Unable to hash password"
+                        });
+                    });
+            })
+            .catch(error => {
+                return res.status(500).send({ error });
+            });
+    } catch (error) {
+        return res.status(401).send({ error });
+    }
 }
