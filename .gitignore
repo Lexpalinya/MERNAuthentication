@@ -29,4 +29,4 @@ client/node_modules
 server/node_modules
 client/.env
 server/.env
-server/config.js
+server/config.ts
